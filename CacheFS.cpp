@@ -7,15 +7,62 @@
 //
 
 #include "CacheFS.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <iostream>
+#include <stdio.h>
+#include <string>
+using namespace std;
+//=============================
+//DEFINES
+//=============================
+#define FAIL -1
+
+
+//=============================
+//GLOBALS
+//=============================
+int bulk_size;
+
+
+
+
+
+
+
+//=============================
+//HELPER FUNCTIONS
+//=============================
+
+
+
+int getBulkSize()
+{
+    struct stat fi;
+    stat("/tmp", &fi);
+    int blkSize = fi.st_blksize;
+    return blkSize;
+}
+
+void errorHandler(int value, string func)
+{
+    if (value == FAIL)
+    {
+        string error = "function " + func + " failed. Exiting.";
+        cerr << error << endl;
+        exit(0);
+    }
+}
+
+
+
 
 int CacheFS_init(int blocks_num, cache_algo_t cache_algo,
                  double f_old , double f_new  )
-
 {
-    
-    
-    
-    
+    bulk_size = getBulkSize();
+    cout << bulk_size << endl;
     return 0;
 }
 
