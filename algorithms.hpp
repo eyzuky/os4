@@ -13,38 +13,48 @@
 
 class CacheAlgo
 {
-    
+    //TODO - Declare virtual functions that all the classes will implement. Then we use polymorphism on them
+    // and in CacheFS.cpp the code will not change for different algorithms.
     
     
 };
 //This class is for managing algo LEAST RECENTLY USED
-class LRU: public CacheAlgo
+class LRUAlgo: public CacheAlgo
 {
-    LRU(){}
-    ~LRU(){}
+public:
     
+    LRUAlgo(int blocks_num){}
+    ~LRUAlgo(){}
+    
+private:
+    int blocks_num;
     
     
 };
 
 //This class is for managing also LEAST FREQUENTLY USED
-class LFU: public CacheAlgo
+class LFUAlgo: public CacheAlgo
 {
-    LFU(){}
-    ~LFU(){}
+public:
+    LFUAlgo(int blocks_num){}
+    ~LFUAlgo(){}
     
-    
+private:
+    int blocks_num;
     
 };
 
 //Hybrid policy
-class FBR: public CacheAlgo
+class FBRAlgo: public CacheAlgo
 {
-    FBR(){}
-    ~FBR(){}
-    
-    
-    
+public:
+    FBRAlgo(int blocks_num, double f_old, double f_new){}
+    ~FBRAlgo(){}
+
+private:
+    int blocks_num;
+    double f_old;
+    double f_new;
     
 };
 

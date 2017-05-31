@@ -18,6 +18,7 @@
 #include <fcntl.h>
 #include <fstream>
 #include <vector>
+#include "algorithms.hpp"
 using namespace std;
 //=============================
 //DEFINES
@@ -34,7 +35,7 @@ int blocks_num_global;
 cache_algo_t algo_global;
 double f_old_global;
 double f_new_global;
-
+CacheAlgo *algo;
 vector<int> fd_vec;
 
 
@@ -87,18 +88,22 @@ int CacheFS_init(int blocks_num, cache_algo_t cache_algo,
     
     
     //Initialize global variables
-    algo_global = cache_algo;
+    algo_global = cache_algo; //they may not be needed anyways, since we will insert them into the algo instance.
     f_new_global = f_new;
     f_old_global = f_old;
     blocks_num_global = blocks_num;
     //-----------------------------
     
-    //Allocate resources here
-    
-    
-    
-    //--------------------------
-    
+    if (algo_global == LFU)
+    {
+        algo = new LFUAlgo(blocks_num);
+    } else if (algo_global == LRU)
+    {
+        algo = new LRUAlgo(blocks_num);
+    } else if (algo_global == FBR)
+    {
+        algo = new FBRAlgo(blocks_num, f_old, f_new);
+    }
     
     
     return 0;
