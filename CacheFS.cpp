@@ -32,7 +32,6 @@ int bulk_size;
 mode_t modes = O_SYNC | 0 | O_RDONLY;
 int blocks_num_global;
 cache_algo_t algo_global;
-
 double f_old_global;
 double f_new_global;
 

@@ -11,28 +11,37 @@
 
 #include <stdio.h>
 
-
-//This class is for managing algo LEAST RECENTLY USED
-class LRU
+class CacheAlgo
 {
+    
+    
+    
+};
+//This class is for managing algo LEAST RECENTLY USED
+class LRU: public CacheAlgo
+{
+    LRU(){}
+    ~LRU(){}
     
     
     
 };
 
 //This class is for managing also LEAST FREQUENTLY USED
-class LFU
+class LFU: public CacheAlgo
 {
-    
+    LFU(){}
+    ~LFU(){}
     
     
     
 };
 
 //Hybrid policy
-class FBR
+class FBR: public CacheAlgo
 {
-    
+    FBR(){}
+    ~FBR(){}
     
     
     
