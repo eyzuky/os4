@@ -19,15 +19,18 @@
 #include <fstream>
 #include <vector>
 #include "algorithms.hpp"
+#include <limits.h>
+#include <stdlib.h>
+
 using namespace std;
 //=============================
-//DEFINES
+//          DEFINES           =
 //=============================
 #define FAIL -1
 
 
 //=============================
-//GLOBALS
+//          GLOBALS           =
 //=============================
 int bulk_size;
 mode_t modes = O_SYNC | 0 | O_RDONLY;
@@ -40,7 +43,7 @@ vector<int> fd_vec;
 
 
 //=============================
-//HELPER FUNCTIONS
+//      HELPER FUNCTIONS      =
 //=============================
 
 
@@ -64,7 +67,9 @@ void errorHandler(int value, string func)
 }
 
 
-
+//===============================
+//      LIBRARY FUNCTIONS       =
+//===============================
 int CacheFS_init(int blocks_num, cache_algo_t cache_algo,
                  double f_old , double f_new  )
 {
@@ -96,13 +101,13 @@ int CacheFS_init(int blocks_num, cache_algo_t cache_algo,
     
     if (algo_global == LFU)
     {
-        algo = new LFUAlgo(blocks_num);
+        algo = new LFUAlgo(blocks_num, bulk_size);
     } else if (algo_global == LRU)
     {
-        algo = new LRUAlgo(blocks_num);
+        algo = new LRUAlgo(blocks_num, bulk_size);
     } else if (algo_global == FBR)
     {
-        algo = new FBRAlgo(blocks_num, f_old, f_new);
+        algo = new FBRAlgo(blocks_num, bulk_size, f_old, f_new);
     }
     
     
@@ -113,15 +118,24 @@ int CacheFS_init(int blocks_num, cache_algo_t cache_algo,
 int CacheFS_destroy()
 {
     
-
+    delete algo;
     return 0;
 }
 
 //note - change 0 to O_DIRECT when working in the aquarium
 int CacheFS_open(const char *pathname)
 {
-    int fd = open(pathname, modes);
-    fd_vec.push_back(fd); //for now just saving fd's in a vector, more for testing than actual EX solution
+    
+    char * abs_path = new char[1000];
+    realpath(pathname, abs_path);
+    int fd = open(abs_path, modes);
+    cout << abs_path << endl;
+    
+    //exit(1);
+    off_t fileLength = lseek(fd, 0, SEEK_END);
+
+    algo->new_file(fd, abs_path, fileLength);
+    algo->remove_block_from_cache();
     return fd;
 }
 
