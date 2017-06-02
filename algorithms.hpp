@@ -47,10 +47,10 @@ public:
     
     bulk_struct get_block(int fd, int block_in_file);
     
+    virtual int fetch_from_file(int fd, void *buf, int block_start, int block_end, int begin, int count);
     virtual char * remove_block_from_cache();
     
     void new_file(int fd, const char * pathname, off_t file_size);
-private:
     Cache_memory cache_memory; //this holds the actual content of the files. Should be initialized with size blocks_num * block_size.
     int blocks_num;
     int block_size;
@@ -65,6 +65,7 @@ public:
     
     LRUAlgo(int blocks_num, int block_size): CacheAlgo(blocks_num, block_size){}
     ~LRUAlgo(){}
+    int fetch_from_file(int fd, void *buf, int block_start, int block_end, int begin, int count);
     char * remove_block_from_cache();
 private:
     void update_counters();
@@ -78,6 +79,7 @@ class LFUAlgo: public CacheAlgo
 public:
     LFUAlgo(int blocks_num, int block_size): CacheAlgo(blocks_num, block_size){}
     ~LFUAlgo(){}
+    int fetch_from_file(int fd, void *buf, int block_start, int block_end, int begin, int count);
     char * remove_block_from_cache();
 private:
     int blocks_num;
@@ -90,6 +92,7 @@ class FBRAlgo: public CacheAlgo
 public:
     FBRAlgo(int blocks_num, int block_size, double f_old, double f_new): CacheAlgo(blocks_num, block_size){}
     ~FBRAlgo(){}
+    int fetch_from_file(int fd, void *buf, int block_start, int block_end, int begin, int count);
     char * remove_block_from_cache();
 private:
     int blocks_num;

@@ -40,7 +40,7 @@ double f_old_global;
 double f_new_global;
 CacheAlgo *algo;
 vector<int> fd_vec;
-
+bool should_cout_2 = false;
 
 //=============================
 //      HELPER FUNCTIONS      =
@@ -74,7 +74,10 @@ int CacheFS_init(int blocks_num, cache_algo_t cache_algo,
                  double f_old , double f_new  )
 {
     bulk_size = getBulkSize();
-    cout << bulk_size << endl;
+    if (should_cout_2)
+    {
+        cout << bulk_size << endl;
+    }
     // from here checking for some errors
     if (blocks_num <= 0)
     {
@@ -125,17 +128,18 @@ int CacheFS_destroy()
 //note - change 0 to O_DIRECT when working in the aquarium
 int CacheFS_open(const char *pathname)
 {
-    
+    //get absolute path
     char * abs_path = new char[1000];
     realpath(pathname, abs_path);
+    //open the file with the modes
     int fd = open(abs_path, modes);
-    cout << abs_path << endl;
-    
-    //exit(1);
-    off_t fileLength = lseek(fd, 0, SEEK_END);
+    if(should_cout_2)
+    {
+        cout << abs_path << endl;
 
+    }
+    off_t fileLength = lseek(fd, 0, SEEK_END);
     algo->new_file(fd, abs_path, fileLength);
-    algo->remove_block_from_cache();
     return fd;
 }
 
@@ -150,24 +154,34 @@ int CacheFS_close(int file_id)
     }
     return 0;
 }
+//this function gets an index for the given offset and returns which bulk it belongs to.
+// its a helper function to understand which bulks we need to fetch
+int which_block (int block_size, off_t file_length, off_t index_to_find)
+{
+    int i = 0;
+    int block = 0;
+    while (i < file_length)
+    {
+        if (index_to_find >= i && index_to_find < i + block_size)
+        {
+            return block;
+        }
+        i += bulk_size;
+        block += 1;
+    }
+    return FAIL;
+}
 
 int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
 {
     int res;
     off_t seek = lseek(file_id, offset, SEEK_SET);
     off_t fileLength = lseek(file_id, 0, SEEK_END);
-    if (count + seek <= fileLength) //this case we are not getting to the file end when readin this chunk
-    {
-        res = pread(file_id, buf, count, seek);
-    } else {
-        off_t size = fileLength - seek;
-        res = pread(file_id, buf, size, seek);
-    }
-    if(res == FAIL)
-    {
-        cerr << "failed to read file" << endl;
-        exit(1);
-    }
+    //we now need to understand which blocks we need in the file:
+    int first_block_to_get = which_block(getBulkSize(), fileLength, offset);
+    int last_block_to_get = which_block(getBulkSize(), fileLength, offset + count);
+    res = algo->fetch_from_file(file_id, buf, first_block_to_get, last_block_to_get, seek, count);
+
     return res;
     
     
