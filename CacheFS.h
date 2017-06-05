@@ -6,8 +6,12 @@
 
 #ifndef CACHEFS_H
 #define CACHEFS_H
-#include <stddef.h> //TODO - REMOVE THIS ONLY FOR WPRKING ON MY MAC
-#include <unistd.h> //TODO - REMOVE THIS ONLY FOR WPRKING ON MY MAC
+
+#include <stdlib.h>
+
+//#include <stddef.h> //TODO - REMOVE THIS ONLY FOR WPRKING ON MY MAC
+//#include <unistd.h> //TODO - REMOVE THIS ONLY FOR WPRKING ON MY MAC
+
 // This enum represents a cache algorithm.
 // The possible values are all the cache algorithms that the library supports.
 enum cache_algo_t{
