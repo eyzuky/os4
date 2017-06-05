@@ -12,7 +12,7 @@
 #include <stdlib.h>
 bool should_cout = true;
 CacheAlgo::CacheAlgo(int blocks_num, int block_size): blocks_num(blocks_num), block_size(block_size)
-{
+{   
     //allocate our cache memory.
     cache_memory = (char*)calloc(blocks_num, block_size);
     //TODO: Check with other people that char * is good to use as the data type for the cache memory.
