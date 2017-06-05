@@ -22,7 +22,6 @@
 #include <limits.h>
 #include <stdlib.h>
 
-using namespace std;
 //=============================
 //          DEFINES           =
 //=============================
@@ -33,7 +32,7 @@ using namespace std;
 //          GLOBALS           =
 //=============================
 int bulk_size;
-mode_t modes = O_SYNC | 0 | O_RDONLY;
+mode_t modes = O_SYNC | 0 | O_RDONLY; // switch O_DIRECT to 0 if on Mac
 int blocks_num_global;
 cache_algo_t algo_global;
 double f_old_global;
@@ -112,8 +111,7 @@ int CacheFS_init(int blocks_num, cache_algo_t cache_algo,
     {
         algo = new FBRAlgo(blocks_num, bulk_size, f_old, f_new);
     }
-    
-    
+
     return 0;
 }
 
@@ -136,7 +134,6 @@ int CacheFS_open(const char *pathname)
     if(should_cout_2)
     {
         cout << abs_path << endl;
-
     }
     off_t fileLength = lseek(fd, 0, SEEK_END);
     algo->new_file(fd, abs_path, fileLength);
@@ -145,7 +142,6 @@ int CacheFS_open(const char *pathname)
 
 int CacheFS_close(int file_id)
 {
-    
     int res = close(file_id);
     if (res == FAIL)
     {
