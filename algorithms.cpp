@@ -8,24 +8,22 @@
 
 #include "algorithms.hpp"
 #include <iostream>
-#include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <stdlib.h>
 #include <string.h>
+#include <malloc.h>
 
 bool should_cout = true;
 CacheAlgo::CacheAlgo(int blocks_num, int block_size): blocks_num(blocks_num), block_size(block_size)
 {   
-
     //allocate our cache memory.
-
-    cache_memory = new char*[blocks_num];
+    blockAvailability = new block_availability[blocks_num];
+    cache_memory = new char* [blocks_num];
     for (int i = 0; i < blocks_num; ++i)
     {
-        cache_memory[i] = new char[block_size];
-        cache_memory[i] = nullptr;
-
+        cache_memory[i] = (char*) aligned_alloc(block_size,block_size); // do not change the aligned allov the pread works only with it
+        blockAvailability[i] = FREE;
     }
 
     if(should_cout)
@@ -45,7 +43,12 @@ CacheAlgo::CacheAlgo(int blocks_num, int block_size): blocks_num(blocks_num), bl
 
 CacheAlgo::~CacheAlgo()
 {
-    free(cache_memory);
+    for (int i = 0; i < blocks_num; ++i)
+    {
+        free (cache_memory[i]);
+    }
+    free(cache_memory); // todo delete properlly
+    free (blockAvailability);
     if(should_cout)
     {
      cout << "cache algo destructor finish" << endl;
@@ -55,12 +58,12 @@ CacheAlgo::~CacheAlgo()
 void CacheAlgo::new_file(int fd, const char* pathname, off_t file_size)
 {
     //allocate array of bulk_struct for the new file
-    bulk_struct_array bulk_array = new bulk_struct[(int)(file_size / block_size) + 1];
-    for (int i = 0; i < (int)(file_size / block_size) + 1; i++)
+    int array_size = (int)(file_size / block_size) + 1;
+    block_struct_array bulk_array = new block_struct[array_size];
+    for (int i = 0; i < array_size; i++)
     {
         bulk_array[i].cache_index = FAIL; //this way we know that this bulk is not loaded to the cache yet
-      //  cout << "bulk_array[i]  : " << &(bulk_array[i]) << endl;
-
+        //  cout << "bulk_array[i]  : " << &(bulk_array[i]) << endl;
     }
     if(should_cout)
     {
@@ -82,7 +85,7 @@ void CacheAlgo::new_file(int fd, const char* pathname, off_t file_size)
 int CacheAlgo::get_block_for_writing()
 {
     for ( int i = 0; i < blocks_num; i++){
-        if (cache_memory[i] == nullptr){
+        if (blockAvailability[i] == FREE){
             return i;
         }
     }
@@ -90,13 +93,13 @@ int CacheAlgo::get_block_for_writing()
     return FAIL;
 }
 
-bulk_struct CacheAlgo::get_block(int fd, int block_in_file)
+block_struct CacheAlgo::get_block(int fd, int block_in_file)
 {
-    bulk_struct_array file_array = pathname_to_bulks[fd_to_pathname[fd]];
+    block_struct_array file_array = pathname_to_bulks[fd_to_pathname[fd]];
     return file_array[block_in_file];
 }
 
-int CacheAlgo::fetch_from_file(int fd, void *buf, int block_start, int block_end, off_t seek, int count)
+int CacheAlgo::fetch_from_file(int fd, void *buf, int block_start, int block_end, off_t seek, off_t offset,  int count)
 {
     cout <<"\n###########################################" << endl;
     cout << "This is function fetch_from_file! " << endl;
@@ -117,14 +120,16 @@ int CacheAlgo::fetch_from_file(int fd, void *buf, int block_start, int block_end
     char* temp_buf = (char *)malloc(sizeof(((block_end-block_start)+1)*this->block_size));
     for(int i = block_start; i < block_end + 1; i++)
     {
-        bulk_struct bulk = get_block(fd, i);
-        if (bulk.cache_index == FAIL) {
+        block_struct currBlock = get_block(fd, i);
+        if (currBlock.cache_index == FAIL) {
             cout << "didn't find block: " << i << " in cache" << endl;
             //block not in cache, need to read it from the file and then append it, and save it in cache.
             //use functions: get_block_for_writing(). if it returns NULL,
             // it means there is no free block for writing,
             // so you need to remove a block depending on the algo that is currently being used.
             int to_read = get_block_for_writing();
+            cout << "to_read : " << to_read << endl;
+
             if (to_read == FAIL)
             {
                 //if get block returned FAIL, it means we need to remove a block from cache. luckily enough, the function remove block from cache returns the index of the removed block, so we can just set it into to_read and continue regularly.
@@ -140,48 +145,31 @@ int CacheAlgo::fetch_from_file(int fd, void *buf, int block_start, int block_end
                 //TODO - MEMCPY THE DATA FROM THE CACHE TO tmp_buf
             }
             
-            bulk.cache_index = to_read;
-
-            cout << "before pread" << endl;
+            currBlock.cache_index = to_read;
             // copying the whole block
-            off_t block_begin = lseek(fd, (i * block_size), SEEK_SET);
-            pread(fd, cache_memory[bulk.cache_index], block_size , block_begin);
-           // cout << "after pread :    bulk pointer: " << *bulk.pointer_to_memory << endl;
-            cout << "after pread" << endl;
+            size_t pread_val ;
+            auto cache = cache_memory[currBlock.cache_index];
+            pread_val = (size_t) pread(fd, (void*)cache, (size_t)block_size, (off_t)(i * block_size));
+            if ( pread_val != block_size ){
+                cout << "fail <<<<------>>>>> pread" << endl;
+            } else{
+                blockAvailability[currBlock.cache_index] = USED;
+            }
 
         } else {
-//            cout << "found block in cache: " << i << endl;
-//            memcpy( &temp_buf[i*block_size], bulk.pointer_to_memory, block_size);// TODO: Debug this. make sure it works.-> added <string.h> is it good?
-//            count_to_fetch -= block_size;
+            // not sure we need this else
         }
+
         char * cast_temp = (char*) temp_buf;
-        
-        
-        //TODO - our memcpy commands always fail we are doing them wrong. check how to do them.
-        
-        
-        //TODO: DEBUG THIS!
-    //    memcpy((&cast_temp[i*block_size]) , cache_memory[bulk.cache_index], (size_t)block_size);// TODO: Debug this. make sure it works.-> added <string.h> is it good?
-
-//        if (i == block_start){
-//            cout << "before memcpy" << endl;
-             // copying only from seek to buf
-//            memcpy(&temp_buf[i*block_size], bulk.pointer_to_memory, block_size);// TODO: Debug this. make sure it works.-> added <string.h> is it good?
-//            count_to_fetch -= (block_size);
-//            cout << "after memcpy" << endl;
-//
-//        } else if (i == block_end && count_to_fetch < block_size){
-//             copying up to the end of the count to buf
-//            memcpy( &temp_buf[i*block_size], bulk.pointer_to_memory, count_to_fetch);// TODO: Debug this. make sure it works.-> added <string.h> is it good?
-//        }else {
-//             copying a full block to buf
-//            memcpy( &temp_buf[i*block_size], bulk.pointer_to_memory, block_size);// TODO: Debug this. make sure it works.-> added <string.h> is it good?
-//            count_to_fetch -= block_size;
-//        }
-
+        cast_temp += i*block_size;
+        char * data = cache_memory[currBlock.cache_index];
+        memcpy(cast_temp + (i * block_size)   , data , (size_t)block_size);
     }
+    cout << "before final buff memcpy" << endl;
     //now after we have all of our blocks in temp_buf, we need to extract the exact data the user asked for (from [begin, begin + count] which is all contained somewhere in our temp_buf. load this data into buf and the user gets what he asked for. also check how to return how much we wrote to his buffer since that is the return of this function.
-   // memcpy(buf, &temp_buf, count);// TODO: Debug this.
+    count_to_fetch = (int)offset - (block_start * block_size);
+    temp_buf += count_to_fetch ;
+    memcpy(buf, temp_buf, (size_t)count);
     return 0;
 }
 
@@ -243,20 +231,24 @@ int CacheAlgo::remove_block_from_cache(){return FAIL;}
 int LRUAlgo::remove_block_from_cache()
 {
     cout << "I am in remove block from cache of algo: LRU" << endl;
+    int index;
+    blockAvailability[index] = FREE;
     return FAIL;
 }
 
 int LFUAlgo::remove_block_from_cache()
 {
     cout << "I am in remove block from cache of algo: LFU" << endl;
-
+    int index;
+    blockAvailability[index] = FREE;
     return FAIL;
 }
 
 int FBRAlgo::remove_block_from_cache()
 {
     cout << "I am in remove block from cache of algo: FBR" << endl;
-
+    int index;
+    blockAvailability[index] = FREE;
     return FAIL;
 }
 

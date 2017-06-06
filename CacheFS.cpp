@@ -32,7 +32,7 @@
 //          GLOBALS           =
 //=============================
 int bulk_size;
-mode_t modes = O_SYNC | 0 | O_RDONLY; // switch O_DIRECT to 0 if on Mac
+mode_t modes = O_SYNC | O_DIRECT | O_RDONLY; // switch O_DIRECT to 0 if on Mac
 int blocks_num_global;
 cache_algo_t algo_global;
 double f_old_global;
@@ -40,6 +40,7 @@ double f_new_global;
 CacheAlgo *algo;
 vector<int> fd_vec;
 bool should_cout_2 = false;
+
 
 //=============================
 //      HELPER FUNCTIONS      =
@@ -119,7 +120,7 @@ int CacheFS_init(int blocks_num, cache_algo_t cache_algo,
 int CacheFS_destroy()
 {
     
-    delete algo;
+    //delete algo; // todo delete properlly
     return 0;
 }
 
@@ -176,7 +177,7 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
     //we now need to understand which blocks we need in the file:
     int first_block_to_get = which_block(getBulkSize(), fileLength, offset);
     int last_block_to_get = which_block(getBulkSize(), fileLength, offset + count);
-    res = algo->fetch_from_file(file_id, buf, first_block_to_get, last_block_to_get, seek, count);
+    res = algo->fetch_from_file(file_id, buf, first_block_to_get, last_block_to_get, seek, offset ,count);
 
     return res;
     

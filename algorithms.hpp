@@ -13,6 +13,10 @@
 #include <map>
 using namespace std;
 
+enum block_availability{
+        USED,
+        FREE,
+};
 
 //------------------------------------------
 //               TYPEDEFS                  -
@@ -21,15 +25,16 @@ using namespace std;
 typedef char ** Cache_memory;
 
 //holds bulk data
-typedef struct bulk_struct
+typedef struct block_struct
 {
+
     int counter;
     int cache_index;
-}bulk_struct;
+}block_struct;
 //holds array of bulk data, which everyfile will hold. if a bulk from a file is not in the cache, its associated index in the array will hold null value.
-typedef bulk_struct * bulk_struct_array;
+typedef block_struct * block_struct_array;
 //map file descriptor to its array
-typedef map<const char *, bulk_struct_array> map_pathname_to_bulk_array; //map file path to bulk array.
+typedef map<const char *, block_struct_array> map_pathname_to_bulk_array; //map file path to bulk array.
 typedef map<int, const char*> map_fd_to_pathname; // since there might be multiple fd's on a path name,
                                                   // if the user opens the same file multiple times from different relative paths.
                                                   // so we always need to create the full path in CacheFS_open..
@@ -48,15 +53,16 @@ public:
     
     int get_block_for_writing(); //this function returns a pointer to empty space in the cache. If none is found, it returns null and the algo knows to remove a bulk from the cache.
     
-    bulk_struct get_block(int fd, int block_in_file);
+    block_struct get_block(int fd, int block_in_file);
     
-    virtual int fetch_from_file(int fd, void *buf, int block_start, int block_end, off_t seek, int count);
+    virtual int fetch_from_file(int fd, void *buf, int block_start, int block_end, off_t seek, off_t offset, int count);
     virtual int remove_block_from_cache();
     
     void new_file(int fd, const char * pathname, off_t file_size);
     Cache_memory cache_memory; //this holds the actual content of the files. Should be initialized with size blocks_num * block_size.
     int blocks_num;
     int block_size;
+    block_availability *blockAvailability;
     map_pathname_to_bulk_array pathname_to_bulks;
     map_fd_to_pathname fd_to_pathname;
 
