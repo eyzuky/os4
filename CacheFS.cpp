@@ -120,7 +120,7 @@ int CacheFS_init(int blocks_num, cache_algo_t cache_algo,
 int CacheFS_destroy()
 {
     
-    //delete algo; // todo delete properlly
+    //delete algo; // todo -  delete properlly
     return 0;
 }
 
