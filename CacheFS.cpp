@@ -174,10 +174,16 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
     int res;
     off_t seek = lseek(file_id, offset, SEEK_SET);
     off_t fileLength = lseek(file_id, 0, SEEK_END);
+    if (offset > fileLength)
+    {
+        return 0;
+    }
+    off_t valid_offset_for_last_block = min((int)fileLength,(int) (offset + count));
+    size_t valid_count = min((int)(fileLength - offset),(int) count);
     //we now need to understand which blocks we need in the file:
     int first_block_to_get = which_block(getBulkSize(), fileLength, offset);
-    int last_block_to_get = which_block(getBulkSize(), fileLength, offset + count);
-    res = algo->fetch_from_file(file_id, buf, first_block_to_get, last_block_to_get, seek, offset ,count);
+    int last_block_to_get = which_block(getBulkSize(), fileLength, valid_offset_for_last_block);
+    res = algo->fetch_from_file(file_id, buf, first_block_to_get, last_block_to_get, seek, offset ,valid_count);
 
     return res;
     
@@ -186,14 +192,13 @@ int CacheFS_pread(int file_id, void *buf, size_t count, off_t offset)
 
 int CacheFS_print_cache (const char *log_path)
 {
-    
+    algo->print_cache(log_path);
     return 0;
 }
 
 
 int CacheFS_print_stat (const char *log_path)
 {
-    
-    return 0;
+    return algo->CacheFS_print_stat (log_path);
 }
 

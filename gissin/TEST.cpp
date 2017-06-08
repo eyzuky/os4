@@ -746,13 +746,13 @@ void stressTest()
 int main()
 {
     sanityCheck();
-    doubleOpenClose();
-    offsetTooBig();
-    basicLRU();
-    basicLFU();
-    basicFBR();
-    readSeveralBlocksAtOnce();
-    stressTest();
+    //doubleOpenClose();
+    //offsetTooBig();
+    //basicLRU();
+    //basicLFU();
+    //basicFBR();
+    //readSeveralBlocksAtOnce();
+    //stressTest();
 
     return 0;
 }
